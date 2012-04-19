@@ -1,0 +1,100 @@
+#!/bin/sh -ex
+
+# convenience symlinks
+ln -s /usr/share/drupal6 /var/www/webroot
+ln -s /etc/drupal/6 /var/www/config
+
+# start mysql server
+/etc/init.d/mysql start
+
+# ugly workaround: preseeding debconf doesn't work
+cat > /etc/dbconfig-common/drupal6.conf << EOF
+dbc_install='true'
+dbc_upgrade='true'
+dbc_remove=''
+dbc_dbtype='mysql'
+dbc_dbuser='drupal6'
+dbc_dbpass='phfG01rgmjkw'
+dbc_dbserver=''
+dbc_dbport=''
+dbc_dbname='drupal6'
+dbc_dbadmin='root'
+dbc_basepath=''
+dbc_ssl=''
+dbc_authmethod_admin=''
+dbc_authmethod_user=''
+EOF
+
+# this configures drupal6 (incomplete install in root.buid)
+DEBIAN_FRONTEND=noninteractive apt-get -f install drupal6
+
+# cleanup after drupal package and setup apache
+rm -f /etc/apache2/conf.d/drupal6.conf
+touch /etc/apache2/conf.d/drupal6.conf
+ln -s /etc/drupal/6/apache.conf /etc/apache2/sites-available/drupal6
+
+# configure cron related
+CRON_ORIG=/usr/share/drupal6/scripts/cron.sh
+CRON_NEW=/etc/drupal/6/cron.sh
+cp $CRON_ORIG $CRON_NEW
+sed -i "s|http://localhost/drupal6|http://localhost|g" $CRON_NEW
+sed -i "s|$CRON_ORIG|$CRON_NEW|g" /etc/cron.d/drupal6
+
+# configure apache
+a2dissite default
+a2ensite drupal6
+a2enmod rewrite
+
+# unpack modules
+MODULES_PATH="/etc/drupal/6/sites/all/modules"
+for module in $(ls $MODULES_PATH/*.tar.gz); do
+    tar -zxf $module -C $MODULES_PATH
+    rm -f $module
+done
+
+# install ckeditor backend
+LIBRARIES_PATH="/etc/drupal/6/sites/all/libraries"
+mkdir -p $LIBRARIES_PATH
+tar -zxf /usr/local/src/ckeditor_*.tar.gz -C $LIBRARIES_PATH
+rm -f /usr/local/src/ckeditor_*.tar.gz
+
+# setup getid3 module
+mkdir -p $MODULES_PATH/getid3/getid3
+ln -s /usr/share/php-getid3 $MODULES_PATH/getid3/getid3/getid3
+
+# install and setup drush
+tar -zxf /usr/local/src/drush-* -C /usr/local/share/
+rm /usr/local/src/drush-*
+
+zcat /usr/local/src/Table.php.gz > /usr/local/share/drush/includes/table.inc
+rm /usr/local/src/Table.php.gz
+
+mkdir -p /etc/drush
+cat > /etc/drush/drushrc.php << EOF
+<?php
+// by default use the drupal root directory
+\$options['r'] = '/usr/share/drupal6';
+EOF
+
+ln -s /usr/local/share/drush/drush /usr/local/bin/drush
+
+# patch install schema to not display drupal footer by default
+SYSTEM_INSTALL=/usr/share/drupal6/modules/system/system.install
+sed --in-place "s/1, 10, 'footer'/0, 10, ''/" $SYSTEM_INSTALL
+
+chown_wwwdata() {
+    chown -R www-data:www-data $1
+    dpkg-statoverride --add www-data www-data 4755 $1
+}
+
+# allow www-data to delete file install_redirect.php
+chown_wwwdata /usr/share/drupal6/tmp
+
+# chown all modules/libraries (they come with their own permissions)
+chown -R root:root /etc/drupal/6/sites/all
+
+# workaround: package isn't creating files symlink
+ln -s /var/lib/drupal6/files /usr/share/drupal6/files
+
+# stop mysql server
+/etc/init.d/mysql stop

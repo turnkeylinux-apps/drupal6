@@ -1,0 +1,8 @@
+#include <turnkey/base>
+#include <turnkey/lamp>
+
+drupal6
+
+php-getid3          /* dependency of drupal module getid3 */
+php5-cli            /* dependency of drupal shell drush */
+php5-curl           /* dependency of drupal module simpletest */
