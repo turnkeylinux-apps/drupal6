@@ -83,14 +83,6 @@ EOF
 
 ln -s /usr/local/share/drush/drush /usr/local/bin/drush
 
-chown_wwwdata() {
-    chown -R www-data:www-data $1
-    dpkg-statoverride --add www-data www-data 4755 $1
-}
-
-# allow www-data to delete file install_redirect.php
-chown_wwwdata /usr/share/drupal6/tmp
-
 # chown all modules/libraries (they come with their own permissions)
 chown -R root:root /etc/drupal/6/sites/all
 
