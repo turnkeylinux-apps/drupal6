@@ -7,26 +7,11 @@ ln -s /etc/drupal/6 /var/www/config
 # start mysql server
 /etc/init.d/mysql start
 
-# ugly workaround: preseeding debconf doesn't work
-cat > /etc/dbconfig-common/drupal6.conf << EOF
-dbc_install='true'
-dbc_upgrade='true'
-dbc_remove=''
-dbc_dbtype='mysql'
-dbc_dbuser='drupal6'
-dbc_dbpass='phfG01rgmjkw'
-dbc_dbserver=''
-dbc_dbport=''
-dbc_dbname='drupal6'
-dbc_dbadmin='root'
-dbc_basepath=''
-dbc_ssl=''
-dbc_authmethod_admin=''
-dbc_authmethod_user=''
+# reconfigure drupal6
+debconf-set-selections << EOF
+drupal6 drupal6/dbconfig-reinstall boolean true
 EOF
-
-# this configures drupal6 (incomplete install in root.buid)
-DEBIAN_FRONTEND=noninteractive apt-get -f install drupal6
+DEBIAN_FRONTEND=noninteractive dpkg-reconfigure drupal6
 
 # cleanup after drupal package and setup apache
 rm -f /etc/apache2/conf.d/drupal6.conf
@@ -44,6 +29,10 @@ sed -i "s|$CRON_ORIG|$CRON_NEW|g" /etc/cron.d/drupal6
 a2dissite default
 a2ensite drupal6
 a2enmod rewrite
+
+# patch install schema to not display drupal footer by default
+SYSTEM_INSTALL=/usr/share/drupal6/modules/system/system.install
+sed -i "s/1, 10, 'footer'/0, 10, ''/" $SYSTEM_INSTALL
 
 # unpack modules
 MODULES_PATH="/etc/drupal/6/sites/all/modules"
@@ -78,10 +67,6 @@ EOF
 
 ln -s /usr/local/share/drush/drush /usr/local/bin/drush
 
-# patch install schema to not display drupal footer by default
-SYSTEM_INSTALL=/usr/share/drupal6/modules/system/system.install
-sed --in-place "s/1, 10, 'footer'/0, 10, ''/" $SYSTEM_INSTALL
-
 chown_wwwdata() {
     chown -R www-data:www-data $1
     dpkg-statoverride --add www-data www-data 4755 $1
@@ -98,3 +83,4 @@ ln -s /var/lib/drupal6/files /usr/share/drupal6/files
 
 # stop mysql server
 /etc/init.d/mysql stop
+
