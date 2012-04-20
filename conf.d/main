@@ -34,6 +34,15 @@ a2enmod rewrite
 SYSTEM_INSTALL=/usr/share/drupal6/modules/system/system.install
 sed -i "s/1, 10, 'footer'/0, 10, ''/" $SYSTEM_INSTALL
 
+# perform initial install
+/etc/init.d/apache2 start
+CURL="curl -c /tmp/cookie -b /tmp/cookie http://127.0.0.1"
+${CURL}"/install.php?profile=default&locale=en" >/dev/null
+${CURL}"/install.php?locale=en&profile=default&op=start&id=1" >/dev/null
+${CURL}"/install.php?locale=en&profile=default&id=1&op=do_nojs" >/dev/null
+${CURL}"/install.php?locale=en&profile=default&id=1&op=finished" >/dev/null
+/etc/init.d/apache2 stop
+
 # unpack modules
 MODULES_PATH="/etc/drupal/6/sites/all/modules"
 for module in $(ls $MODULES_PATH/*.tar.gz); do
