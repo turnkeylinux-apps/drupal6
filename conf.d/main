@@ -43,6 +43,13 @@ ${CURL}"/install.php?locale=en&profile=default&id=1&op=do_nojs" >/dev/null
 ${CURL}"/install.php?locale=en&profile=default&id=1&op=finished" >/dev/null
 /etc/init.d/apache2 stop
 
+# create welcome page
+WELCOME='<div id=\"first-time\"><p>Please follow these steps to set up and start using your website:</p><ol><li><strong>Finalize installation</strong> To get started, visit the <a href=\"/install.php?profile=default&locale=en\">installation page</a> to configure the site name and setup the administrative user account.</li><li><strong>Configure your website</strong> Once logged in, visit the <a href=\"/admin\">administration section</a>, where you can <a href=\"/admin/settings\">customize and configure</a> all aspects of your website.</li><li><strong>Enable additional functionality</strong> Next, visit the <a href=\"/admin/build/modules\">module list</a> and enable features which suit your specific needs. You can find additional modules in the <a href=\"http://drupal.org/project/modules\">Drupal modules download section</a>.</li><li><strong>Customize your website design</strong> To change the \"look and feel\" of your website, visit the <a href=\"/admin/build/themes\">themes section</a>. You may choose from one of the included themes or download additional themes from the <a href=\"http://drupal.org/project/themes\">Drupal themes download section</a>.</li><li><strong>Start posting content</strong> Finally, delete this welcome page and <a href=\"/node/add\">create content</a> for your website.</li></ol><p>For more information, please refer to the <a href=\"http://www.turnkeylinux.org/drupal6\">TurnKey Drupal6 release notes</a>, <a href=\"/admin/help\">help section</a>, or the <a href=\"http://drupal.org/handbooks\">online Drupal handbooks</a>. You may also post at the <a href=\"http://drupal.org/forum\">Drupal forum</a>, or view the wide range of <a href=\"http://drupal.org/support\">other support options</a> available.</p></div>'
+DB_NAME="drupal6"
+MYSQL_BATCH="mysql --user=root --password=$MYSQL_PASS --batch"
+$MYSQL_BATCH --database=$DB_NAME --execute "INSERT INTO node VALUES ('1', '1', 'page', '', 'Welcome to TurnKey Drupal', '1', '1', '1334908018', '1334908036', '0', '1', '0', '0', '0', '0');"
+$MYSQL_BATCH --database=$DB_NAME --execute "INSERT INTO node_revisions VALUES ('1', '1', '1', 'Welcome to TurnKey Drupal', '$WELCOME', '$WELCOME', '', '1334908036', '2');"
+
 # unpack modules
 MODULES_PATH="/etc/drupal/6/sites/all/modules"
 for module in $(ls $MODULES_PATH/*.tar.gz); do
