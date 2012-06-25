@@ -4,6 +4,9 @@
 -mysql:drupal6/cache_menu
 -mysql:drupal6/cache_page
 -mysql:drupal6/cache_views
+-mysql:drupal6/cache_form
+-mysql:drupal6/cache_block
+-mysql:drupal6/cache_luceneapi
 -mysql:drupal6/devel_queries
 -mysql:drupal6/devel_times
 -mysql:drupal6/search_dataset
