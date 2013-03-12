@@ -1,6 +1,5 @@
 root.build/ignore-errors = drupal6
-COMMON_OVERLAYS = ckeditor
-COMMON_CONF = apache-credit
+COMMON_CONF = ckeditor apache-credit
 
 CREDIT_ANCHORTEXT = Drupal 6 Appliance
 
