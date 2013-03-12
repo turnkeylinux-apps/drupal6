@@ -53,6 +53,9 @@ MYSQL_BATCH="mysql --user=root --password=$MYSQL_PASS --batch"
 $MYSQL_BATCH --database=$DB_NAME --execute "INSERT INTO node VALUES ('1', '1', 'page', '', 'Welcome to TurnKey Drupal', '1', '1', '1334908018', '1334908036', '0', '1', '0', '0', '0', '0');"
 $MYSQL_BATCH --database=$DB_NAME --execute "INSERT INTO node_revisions VALUES ('1', '1', '1', 'Welcome to TurnKey Drupal', '$WELCOME', '$WELCOME', '', '1334908036', '2');"
 
+# increase php cli memory limit (for drush)
+sed -i "s|^memory_limit.*|memory_limit = 64M|" /etc/php5/cli/php.ini
+
 # drush: install, configure and install modules
 [ "$FAB_HTTP_PROXY" ] && export HTTP_PROXY=$FAB_HTTP_PROXY
 
