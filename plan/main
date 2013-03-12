@@ -2,7 +2,8 @@
 #include <turnkey/lamp>
 
 drupal6
+php-pear            /* used for drush */
 
 php-getid3          /* dependency of drupal module getid3 */
-php5-cli            /* dependency of drupal shell drush */
 php5-curl           /* dependency of drupal module simpletest */
+

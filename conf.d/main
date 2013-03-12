@@ -18,6 +18,9 @@ rm -f /etc/apache2/conf.d/drupal6.conf
 touch /etc/apache2/conf.d/drupal6.conf
 ln -s /etc/drupal/6/apache.conf /etc/apache2/sites-available/drupal6
 
+# workaround: package isn't creating files symlink
+ln -sf /var/lib/drupal6/files /usr/share/drupal6/files
+
 # configure cron related
 CRON_ORIG=/usr/share/drupal6/scripts/cron.sh
 CRON_NEW=/etc/drupal/6/cron.sh
@@ -50,29 +53,11 @@ MYSQL_BATCH="mysql --user=root --password=$MYSQL_PASS --batch"
 $MYSQL_BATCH --database=$DB_NAME --execute "INSERT INTO node VALUES ('1', '1', 'page', '', 'Welcome to TurnKey Drupal', '1', '1', '1334908018', '1334908036', '0', '1', '0', '0', '0', '0');"
 $MYSQL_BATCH --database=$DB_NAME --execute "INSERT INTO node_revisions VALUES ('1', '1', '1', 'Welcome to TurnKey Drupal', '$WELCOME', '$WELCOME', '', '1334908036', '2');"
 
-# unpack modules
-MODULES_PATH="/etc/drupal/6/sites/all/modules"
-for module in $(ls $MODULES_PATH/*.tar.gz); do
-    tar -zxf $module -C $MODULES_PATH
-    rm -f $module
-done
+# drush: install, configure and install modules
+[ "$FAB_HTTP_PROXY" ] && export HTTP_PROXY=$FAB_HTTP_PROXY
 
-# install ckeditor backend
-LIBRARIES_PATH="/etc/drupal/6/sites/all/libraries"
-mkdir -p $LIBRARIES_PATH
-tar -zxf /usr/local/src/ckeditor_*.tar.gz -C $LIBRARIES_PATH
-rm -f /usr/local/src/ckeditor_*.tar.gz
-
-# setup getid3 module
-mkdir -p $MODULES_PATH/getid3/getid3
-ln -s /usr/share/php-getid3 $MODULES_PATH/getid3/getid3/getid3
-
-# install and setup drush
-tar -zxf /usr/local/src/drush-* -C /usr/local/share/
-rm /usr/local/src/drush-*
-
-zcat /usr/local/src/Table.php.gz > /usr/local/share/drush/includes/table.inc
-rm /usr/local/src/Table.php.gz
+pear channel-discover pear.drush.org
+pear install drush/drush
 
 mkdir -p /etc/drush
 cat > /etc/drush/drushrc.php << EOF
@@ -81,13 +66,20 @@ cat > /etc/drush/drushrc.php << EOF
 \$options['r'] = '/usr/share/drupal6';
 EOF
 
-ln -s /usr/local/share/drush/drush /usr/local/bin/drush
+drush dl --default-major=6 views cck panels backup_migrate devel ckeditor imce captcha pathauto globalredirect fivestar imagecache webform logintoboggan admin_menu tagadelic lightbox2 moduleinfo google_analytics jquery_ui ctools content_access rules token votingapi imageapi advanced_help simpletest
 
-# chown all modules/libraries (they come with their own permissions)
-chown -R root:root /etc/drupal/6/sites/all
+unset HTTP_PROXY
 
-# workaround: package isn't creating files symlink
-ln -s /var/lib/drupal6/files /usr/share/drupal6/files
+# install ckeditor backend
+LIBRARIES_PATH="/etc/drupal/6/sites/all/libraries"
+mkdir -p $LIBRARIES_PATH
+tar -zxf /usr/local/src/ckeditor_*.tar.gz -C $LIBRARIES_PATH
+rm -f /usr/local/src/ckeditor_*.tar.gz
+chown -R root:root $LIBRARIES_PATH
+
+# setup getid3 module
+mkdir -p $MODULES_PATH/getid3/getid3
+ln -s /usr/share/php-getid3 $MODULES_PATH/getid3/getid3/getid3
 
 # stop mysql server
 /etc/init.d/mysql stop
